@@ -57,7 +57,7 @@ IR_cells/
 [Discussion needed]
 
 ##### HaCaT NP Comparison
-![HaCaT AMT Comparison](figures\HaCaT_NP_20241216_120037.png)
+![HaCaT NP Comparison](figures\HaCaT_NP_20241216_120037.png)
 [Discussion needed]
 
 ##### HeLa AMT Comparison
@@ -65,7 +65,7 @@ IR_cells/
 [Discussion needed]
 
 ##### HeLa NP Comparison
-![HeLa AMT Comparison](figures\HeLa_NP_20241216_120038.png)
+![HeLa NP Comparison](figures\HeLa_NP_20241216_120038.png)
 [Discussion needed]
 
 ##### All Cell Lines Comparison
