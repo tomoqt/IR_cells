@@ -91,7 +91,7 @@ IR_cells/
 [Discussion needed]
 
 ##### t-SNE Analysis
-![t-SNE by Cell Line](figures/dim_reduction/tsne_by_cell_line.png)
+![t-SNE by Cell Line](figures/dim_reduction/t-sne_by_cell_line.png)
 [Discussion needed]
 
 ##### UMAP Analysis
