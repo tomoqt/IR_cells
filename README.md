@@ -53,23 +53,23 @@ IR_cells/
 #### Results
 
 ##### HaCaT AMT Comparison
-![HaCaT AMT Comparison](figures\HaCaT_AMT_20241216_120035.png)
+![HaCaT AMT Comparison](figures/simple_plots/HaCaT_AMT_20241216_120035.png)
 [Discussion needed]
 
 ##### HaCaT NP Comparison
-![HaCaT NP Comparison](figures\HaCaT_NP_20241216_120037.png)
+![HaCaT NP Comparison](figures/simple_plots/HaCaT_NP_20241216_120037.png)
 [Discussion needed]
 
 ##### HeLa AMT Comparison
-![HeLa AMT Comparison](figures\HeLa_AMT_20241216_120036.png)
+![HeLa AMT Comparison](figures/simple_plots/HeLa_AMT_20241216_120036.png)
 [Discussion needed]
 
 ##### HeLa NP Comparison
-![HeLa NP Comparison](figures\HeLa_NP_20241216_120038.png)
+![HeLa NP Comparison](figures/simple_plots/HeLa_NP_20241216_120038.png)
 [Discussion needed]
 
 ##### All Cell Lines Comparison
-![All Cell Lines Comparison](figures\All_Comparison_20241216_120038.png)
+![All Cell Lines Comparison](figures/simple_plots/All_Comparison_20241216_120038.png)
 [Discussion needed]
 
 ### 2. Dimensionality Reduction Analysis
