@@ -7,7 +7,7 @@ This project analyzes infrared spectroscopy data from HaCaT (normal) and HeLa (c
 
 ```bash
 pip install -r requirements.txt
-```bash
+```
 
 ### Requirements 
 
