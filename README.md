@@ -3,7 +3,9 @@
 ## Introduction
 This project analyzes infrared spectroscopy data from HaCaT (normal) and HeLa (cancer) cells treated with different concentrations of aminopterine in both molecular (AMT) and gold nanoparticle-conjugated (NP) forms. The analysis aims to understand the spectral differences between cell types and their responses to treatments.
 
-## Installationbash
+## Installation
+
+```bash
 pip install -r requirements.txt
 
 
@@ -49,13 +51,17 @@ IR_cells/
 - Statistical analysis of spectral variations
 
 #### Results
-[Link to HaCaT_AMT comparison](figures/HaCaT_AMT_timestamp.png)
+
+##### HaCaT AMT Comparison
+![HaCaT AMT Comparison](figures/HaCaT_AMT_timestamp.png)
 [Discussion needed]
 
-[Link to HeLa_AMT comparison](figures/HeLa_AMT_timestamp.png)
+##### HeLa AMT Comparison
+![HeLa AMT Comparison](figures/HeLa_AMT_timestamp.png)
 [Discussion needed]
 
-[Link to All_Comparison](figures/All_Comparison_timestamp.png)
+##### All Cell Lines Comparison
+![All Cell Lines Comparison](figures/All_Comparison_timestamp.png)
 [Discussion needed]
 
 ### 2. Dimensionality Reduction Analysis
@@ -69,16 +75,19 @@ IR_cells/
   - Control vs treated
 
 #### Results
-[Link to PCA explained variance](figures/dim_reduction/pca_explained_variance.png)
+##### PCA Analysis
+![PCA Explained Variance](figures/dim_reduction/pca_explained_variance.png)
 [Discussion needed]
 
-[Link to PCA by treatment](figures/dim_reduction/pca_by_treatment.png)
+![PCA by Treatment](figures/dim_reduction/pca_by_treatment.png)
 [Discussion needed]
 
-[Link to t-SNE by cell line](figures/dim_reduction/tsne_by_cell_line.png)
+##### t-SNE Analysis
+![t-SNE by Cell Line](figures/dim_reduction/tsne_by_cell_line.png)
 [Discussion needed]
 
-[Link to UMAP by concentration](figures/dim_reduction/umap_by_concentration.png)
+##### UMAP Analysis
+![UMAP by Concentration](figures/dim_reduction/umap_by_concentration.png)
 [Discussion needed]
 
 ## Development Roadmap
