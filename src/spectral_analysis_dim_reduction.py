@@ -13,7 +13,7 @@ from spectral_analysis import SpectralData
 class SpectralAnalysis:
     def __init__(self, data_dir):
         self.data_dir = Path(data_dir)
-        self.output_dir = Path(r'D:\Experiments\IR_cells\figures\dim_reduction')
+        self.output_dir = Path(r'D:/Experiments/IR_cells/figures/dim_reduction')
         self.output_dir.mkdir(exist_ok=True, parents=True)
         self.spectra_data = self._load_all_spectra()
         

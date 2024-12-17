@@ -239,7 +239,7 @@ class IRSpectraTrainer:
 
 def main():
     # Configuration
-    DATA_DIR = r'D:\Experiments\IR_cells\data\SRmicroFTIR_cellule'
+    DATA_DIR = r'data/SRmicroFTIR_cellule'
     BATCH_SIZE = 4
     NUM_EPOCHS = 100
     LEARNING_RATE = 1e-3
