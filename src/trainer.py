@@ -64,15 +64,21 @@ class IRSpectraTrainer:
                 x.to(self.device) for x in batch
             ]
             
+            # Ensure proper dimensions
+            batch_size = spectra.size(0)
+            spectra = spectra.squeeze(1)  # Remove extra channel dim if present
+            treatment_targets = treatment_targets.view(-1)  # Flatten to 1D
+            concentration_targets = concentration_targets.view(-1)  # Flatten to 1D
+            
             # Forward pass
             treatment_logits, concentration_preds = self.model(spectra)
             
             # Calculate losses
             treatment_loss = self.treatment_criterion(
-                treatment_logits, treatment_targets.squeeze()
+                treatment_logits, treatment_targets
             )
             concentration_loss = self.concentration_criterion(
-                concentration_preds, concentration_targets
+                concentration_preds.squeeze(), concentration_targets
             )
             
             # Combined loss
@@ -84,19 +90,19 @@ class IRSpectraTrainer:
             self.optimizer.step()
             
             # Calculate metrics
-            total_loss += loss.item() * spectra.size(0)
+            total_loss += loss.item() * batch_size
             treatment_pred = treatment_logits.argmax(dim=1)
-            treatment_correct += (treatment_pred == treatment_targets.squeeze()).sum().item()
-            concentration_mse += concentration_loss.item() * spectra.size(0)
-            num_samples += spectra.size(0)
+            treatment_correct += (treatment_pred == treatment_targets).sum().item()
+            concentration_mse += concentration_loss.item() * batch_size
+            num_samples += batch_size
             
             # Log batch metrics to wandb
-            if self.use_wandb and batch_idx % 10 == 0:  # Log every 10 batches
+            if self.use_wandb and batch_idx % 10 == 0:
                 wandb.log({
                     'batch/loss': loss.item(),
                     'batch/treatment_loss': treatment_loss.item(),
                     'batch/concentration_loss': concentration_loss.item(),
-                    'batch/treatment_accuracy': (treatment_pred == treatment_targets.squeeze()).float().mean().item(),
+                    'batch/treatment_accuracy': (treatment_pred == treatment_targets).float().mean().item(),
                 })
         
         metrics = {
@@ -128,30 +134,36 @@ class IRSpectraTrainer:
                 x.to(self.device) for x in batch
             ]
             
+            # Ensure proper dimensions
+            batch_size = spectra.size(0)
+            spectra = spectra.squeeze(1)  # Remove extra channel dim if present
+            treatment_targets = treatment_targets.view(-1)  # Flatten to 1D
+            concentration_targets = concentration_targets.view(-1)  # Flatten to 1D
+            
             # Forward pass
             treatment_logits, concentration_preds = self.model(spectra)
             
             # Calculate losses
             treatment_loss = self.treatment_criterion(
-                treatment_logits, treatment_targets.squeeze()
+                treatment_logits, treatment_targets
             )
             concentration_loss = self.concentration_criterion(
-                concentration_preds, concentration_targets
+                concentration_preds.squeeze(), concentration_targets
             )
             
             loss = treatment_loss + concentration_loss
             
             # Calculate metrics
-            total_loss += loss.item() * spectra.size(0)
+            total_loss += loss.item() * batch_size
             treatment_pred = treatment_logits.argmax(dim=1)
-            treatment_correct += (treatment_pred == treatment_targets.squeeze()).sum().item()
-            concentration_mse += concentration_loss.item() * spectra.size(0)
-            num_samples += spectra.size(0)
+            treatment_correct += (treatment_pred == treatment_targets).sum().item()
+            concentration_mse += concentration_loss.item() * batch_size
+            num_samples += batch_size
             
             # Collect predictions for confusion matrix
             all_treatment_preds.extend(treatment_pred.cpu().numpy())
-            all_treatment_targets.extend(treatment_targets.squeeze().cpu().numpy())
-            all_concentration_preds.extend(concentration_preds.cpu().numpy())
+            all_treatment_targets.extend(treatment_targets.cpu().numpy())
+            all_concentration_preds.extend(concentration_preds.squeeze().cpu().numpy())
             all_concentration_targets.extend(concentration_targets.cpu().numpy())
         
         metrics = {

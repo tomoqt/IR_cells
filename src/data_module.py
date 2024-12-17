@@ -82,14 +82,14 @@ class IRSpectraDataset(Dataset):
     def __getitem__(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         item = self.spectra_data[idx]
         
-        # Prepare input spectrum
+        # Prepare input spectrum (B, C, L) where B=1, C=1, L=length
         spectrum = torch.FloatTensor(item['spectrum']).unsqueeze(0)  # Add channel dimension
         
-        # Prepare classification target (treatment type)
+        # Prepare classification target (ensure it's a single integer)
         treatment_idx = self.treatment_to_idx[item['treatment']]
         treatment_target = torch.LongTensor([treatment_idx])
         
-        # Prepare regression target (concentration)
+        # Prepare regression target (ensure it's a single float)
         concentration = self.concentration_to_float[item['concentration']]
         concentration_target = torch.FloatTensor([concentration])
         
