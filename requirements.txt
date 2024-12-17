@@ -6,3 +6,4 @@ scikit-learn
 umap-learn 
 torch
 tqdm
+wandb
