@@ -3,7 +3,7 @@ venv/
 env/
 .env/
 .venv/
-
+*.pth
 # Python cache files
 __pycache__/
 *.py[cod]

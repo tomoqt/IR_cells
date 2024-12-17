@@ -4,3 +4,5 @@ matplotlib
 seaborn
 scikit-learn 
 umap-learn 
+torch
+tqdm
