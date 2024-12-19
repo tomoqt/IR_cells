@@ -8,29 +8,29 @@ class IRSpectraModel(nn.Module):
                  num_concentrations: int = 3,
                  pretrained: bool = False):
         super().__init__()
-        
+        self.embedding_dim = 768
         # Initialize backbone
         self.backbone = ConvNeXt1D(
             in_chans=1,
-            num_classes=512,  # Use as feature extractor
+            num_classes=self.embedding_dim,  # Use as feature extractor
             depths=[3, 3, 9, 3],
             dims=[96, 192, 384, 768]
         )
         
         # Classification head for treatment type
         self.treatment_classifier = nn.Sequential(
-            nn.Linear(512, 256),
+            nn.Linear(self.embedding_dim, self.embedding_dim//2),
             nn.ReLU(),
             nn.Dropout(0.2),
-            nn.Linear(256, num_treatments)
+            nn.Linear(self.embedding_dim//2, num_treatments)
         )
         
         # Changed: Classification head for concentration instead of regression
         self.concentration_classifier = nn.Sequential(
-            nn.Linear(512, 256),
+            nn.Linear(self.embedding_dim, self.embedding_dim//2),
             nn.ReLU(),
             nn.Dropout(0.2),
-            nn.Linear(256, num_concentrations)
+            nn.Linear(self.embedding_dim//2, num_concentrations)
         )
         
     def forward(self, x):

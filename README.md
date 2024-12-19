@@ -117,15 +117,48 @@ IR_cells/
    - Data augmentation strategies
 
 ### Deep Learning Implementation
-The project will utilize the ConvNeXt1D architecture (from `legacy_code/convnext1d.py`) for:
-- Classification of treatment types
-- Identification of cell lines
-- Prediction of treatment concentrations
+The project utilizes the ConvNeXt1D architecture for spectral analysis with the following components:
 
-The preprocessing pipeline (`legacy_code/pipeline.py`) will be integrated to ensure:
-- Consistent data preprocessing
-- Proper window selection
-- Appropriate normalization
+#### Training Pipeline (`trainer.py`)
+- Multi-task learning approach:
+  - Treatment classification (Control/AMT/NP)
+  - Concentration classification (1/2, 1/8, 1/100)
+- Training features:
+  - AdamW optimizer with weight decay
+  - Learning rate scheduling with ReduceLROnPlateau
+  - WandB integration for experiment tracking
+  - Model checkpointing for best validation loss
+- Performance monitoring:
+  - Treatment and concentration accuracy
+  - Confusion matrices for both tasks
+  - Loss tracking for both classification tasks
+
+#### Data Processing (`data_module.py`)
+- Automated data loading and preprocessing pipeline
+- Preprocessing features:
+  - Global window resampling to 1000 points
+  - Spectrum normalization
+  - Consistent wavenumber range (800-4000 cm⁻¹)
+- Data organization:
+  - Automatic train/validation split (80/20)
+  - Batch processing with DataLoader
+  - Label encoding for treatments and concentrations
+
+#### Model Inference (`inference.py`)
+- Feature visualization capabilities:
+  - Activation mapping across spectral regions
+  - Attention visualization for model interpretability
+- Batch prediction support
+- Integrated preprocessing pipeline
+
+#### Training Results
+[Training metrics and visualizations available in figures/training/]
+
+#### Model Analysis
+The model demonstrates ability to identify spectral patterns associated with different treatments and concentrations. Example analysis from figures/model_analysis shows the model's attention patterns across the spectral range, highlighting regions of interest for classification decisions.
+
+![Model Analysis Example](figures/model_analysis/hacat_amt_1-2_pred_amt_1-2_20241219_170742.png)
+[Discussion needed]
 
 ## Usage
 

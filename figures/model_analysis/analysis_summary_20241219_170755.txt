@@ -1,0 +1,65 @@
+Model Analysis Summary
+=====================
+
+Overall Accuracy:
+Treatment: 64.29%
+Concentration: 0.00%
+
+Individual Predictions:
+
+Cell Line: HaCaT
+Treatment: Control -> NP
+Concentration: None -> 1/2
+--------------------------------------------------
+Cell Line: HeLa
+Treatment: Control -> Control
+Concentration: None -> 1/2
+--------------------------------------------------
+Cell Line: HaCaT
+Treatment: AMT -> AMT
+Concentration: 1-2 -> 1/2
+--------------------------------------------------
+Cell Line: HaCaT
+Treatment: AMT -> AMT
+Concentration: 1-8 -> 1/8
+--------------------------------------------------
+Cell Line: HaCaT
+Treatment: AMT -> AMT
+Concentration: 1-100 -> 1/2
+--------------------------------------------------
+Cell Line: HaCaT
+Treatment: NP -> AMT
+Concentration: 1-2 -> 1/2
+--------------------------------------------------
+Cell Line: HaCaT
+Treatment: NP -> Control
+Concentration: 1-8 -> 1/2
+--------------------------------------------------
+Cell Line: HaCaT
+Treatment: NP -> AMT
+Concentration: 1-100 -> 1/2
+--------------------------------------------------
+Cell Line: HeLa
+Treatment: AMT -> AMT
+Concentration: 1-2 -> 1/2
+--------------------------------------------------
+Cell Line: HeLa
+Treatment: AMT -> NP
+Concentration: 1-8 -> 1/100
+--------------------------------------------------
+Cell Line: HeLa
+Treatment: AMT -> AMT
+Concentration: 1-100 -> 1/100
+--------------------------------------------------
+Cell Line: HeLa
+Treatment: NP -> NP
+Concentration: 1-2 -> 1/2
+--------------------------------------------------
+Cell Line: HeLa
+Treatment: NP -> NP
+Concentration: 1-8 -> 1/8
+--------------------------------------------------
+Cell Line: HeLa
+Treatment: NP -> NP
+Concentration: 1-100 -> 1/100
+--------------------------------------------------

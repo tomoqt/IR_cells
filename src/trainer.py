@@ -18,6 +18,7 @@ class IRSpectraTrainer:
                  train_loader: DataLoader,
                  val_loader: DataLoader,
                  learning_rate: float = 1e-4,
+                 weight_decay: float = 0.1,
                  device: str = 'cuda' if torch.cuda.is_available() else 'cpu',
                  wandb_config: dict = None,
                  debug_plots: bool = False):
@@ -35,6 +36,7 @@ class IRSpectraTrainer:
                 name=wandb_config.get('name', None),
                 config={
                     'learning_rate': learning_rate,
+                    'weight_decay': weight_decay,
                     'model_type': model.__class__.__name__,
                     'batch_size': train_loader.batch_size,
                     'device': device,
@@ -49,7 +51,11 @@ class IRSpectraTrainer:
         self.concentration_criterion = nn.CrossEntropyLoss()
         
         # Optimizer
-        self.optimizer = optim.AdamW(model.parameters(), lr=learning_rate)
+        self.optimizer = optim.AdamW(
+            model.parameters(), 
+            lr=learning_rate,
+            weight_decay=weight_decay
+        )
         
         # Learning rate scheduler
         self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(
@@ -306,6 +312,7 @@ def main():
     BATCH_SIZE = 16
     NUM_EPOCHS = 200
     LEARNING_RATE = 1e-4
+    WEIGHT_DECAY = 0.2
     
     # WandB configuration
     wandb_config = {
@@ -314,6 +321,7 @@ def main():
         'tags': ['baseline', 'convnext1d'],
         'batch_size': BATCH_SIZE,
         'learning_rate': LEARNING_RATE,
+        'weight_decay': WEIGHT_DECAY,
         'num_epochs': NUM_EPOCHS,
         'architecture': 'ConvNeXt1D',
         'notes': 'Baseline training with ConvNeXt1D for IR spectra classification and regression'
@@ -339,6 +347,7 @@ def main():
         train_loader=train_loader,
         val_loader=val_loader,
         learning_rate=LEARNING_RATE,
+        weight_decay=WEIGHT_DECAY,
         wandb_config=wandb_config,
         debug_plots=False  # Set to False
     )

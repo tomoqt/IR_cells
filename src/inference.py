@@ -89,46 +89,95 @@ class IRSpectraInference:
                              spectrum: np.ndarray,
                              wavenumbers: np.ndarray,
                              feature_maps: Dict[str, np.ndarray],
-                             save_path: Optional[str] = None):
+                             save_path: Optional[str] = None,
+                             num_bins: int = 100):
         """
-        Visualize feature maps along with input spectrum
+        Visualize feature maps and their aggregated activation patterns over the input spectrum
         
         Args:
             spectrum: Original spectrum
             wavenumbers: Corresponding wavenumbers
             feature_maps: Dictionary of feature maps from each stage
             save_path: Optional path to save the plot
+            num_bins: Number of bins for aggregating activations over wavenumbers
         """
-        num_stages = len(feature_maps)
-        fig, axes = plt.subplots(num_stages + 1, 1, figsize=(12, 4*num_stages + 4),
-                                gridspec_kw={'height_ratios': [2] + [1]*num_stages})
+        # Create figure
+        fig, (ax_spectrum, ax_dist) = plt.subplots(2, 1, figsize=(12, 8),
+                                                  gridspec_kw={'height_ratios': [2, 1]},
+                                                  sharex=True)
         
         # Plot original spectrum
-        axes[0].plot(wavenumbers, spectrum)
-        axes[0].set_xlabel('Wavenumber (cm⁻¹)')
-        axes[0].set_ylabel('Absorbance')
-        axes[0].set_title('Input Spectrum')
-        axes[0].grid(True, alpha=0.3)
+        ax_spectrum.plot(wavenumbers, spectrum, 'b-', label='Spectrum', alpha=0.7)
+        ax_spectrum.set_xlabel('Wavenumber (cm⁻¹)')
+        ax_spectrum.set_ylabel('Absorbance')
+        ax_spectrum.set_title('Input Spectrum with Model Attention')
+        ax_spectrum.grid(True, alpha=0.3)
         
-        # Plot feature maps
-        for i, (name, fmap) in enumerate(feature_maps.items(), 1):
-            # Average across channels and normalize
-            fmap = fmap.squeeze()  # Remove batch dimension
-            if fmap.ndim > 2:  # If we have channel dimension
-                fmap_avg = np.mean(fmap, axis=0)  # Average across channels
-            else:
-                fmap_avg = fmap
-                
-            # Normalize
-            fmap_norm = (fmap_avg - fmap_avg.min()) / (fmap_avg.max() - fmap_avg.min() + 1e-8)
+        # Aggregate activations across all feature maps
+        bin_edges = np.linspace(wavenumbers.min(), wavenumbers.max(), num_bins + 1)
+        bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
+        aggregated_activations = np.zeros(num_bins)
+        
+        # Process each feature map
+        for name, fmap in feature_maps.items():
+            # Remove batch dimension and handle channel dimension
+            fmap = fmap.squeeze(0)  # Remove batch dimension
             
-            # Plot heatmap
-            sns.heatmap(fmap_norm[np.newaxis, :], ax=axes[i], cmap='viridis',
-                       cbar_kws={'label': 'Normalized Activation'})
-            axes[i].set_title(f'Feature Map - {name}')
-            axes[i].set_ylabel('Channels')
-            # Remove x-ticks for cleaner visualization
-            axes[i].set_xticks([])
+            if fmap.ndim == 3:  # If shape is (channels, height, width)
+                # For each channel, get the activation pattern
+                for channel in range(fmap.shape[0]):
+                    channel_activations = fmap[channel]
+                    # Normalize channel activations
+                    channel_activations = (channel_activations - channel_activations.min()) / \
+                                        (channel_activations.max() - channel_activations.min() + 1e-8)
+                    
+                    # Interpolate to match wavenumber scale
+                    interp_activations = np.interp(
+                        bin_centers,
+                        np.linspace(wavenumbers.min(), wavenumbers.max(), channel_activations.shape[-1]),
+                        channel_activations.mean(axis=0)  # Average across height if needed
+                    )
+                    
+                    # Add to aggregate
+                    aggregated_activations += interp_activations
+            
+            elif fmap.ndim == 2:  # If already 2D
+                # Normalize activations
+                fmap_norm = (fmap - fmap.min()) / (fmap.max() - fmap.min() + 1e-8)
+                
+                # Interpolate to match wavenumber scale
+                interp_activations = np.interp(
+                    bin_centers,
+                    np.linspace(wavenumbers.min(), wavenumbers.max(), fmap_norm.shape[-1]),
+                    fmap_norm.mean(axis=0)
+                )
+                
+                # Add to aggregate
+                aggregated_activations += interp_activations
+        
+        # Normalize final aggregated activations
+        aggregated_activations = (aggregated_activations - aggregated_activations.min()) / \
+                               (aggregated_activations.max() - aggregated_activations.min())
+        
+        # Plot aggregated attention
+        ax_dist.fill_between(bin_centers, 0, aggregated_activations, 
+                            alpha=0.3, color='r', label='Aggregated Attention')
+        ax_dist.plot(bin_centers, aggregated_activations, 'r-', alpha=0.7)
+        ax_dist.set_ylabel('Normalized Activation')
+        ax_dist.set_xlabel('Wavenumber (cm⁻¹)')
+        ax_dist.grid(True, alpha=0.3)
+        
+        # Add attention overlay on spectrum
+        ax_spectrum_twin = ax_spectrum.twinx()
+        ax_spectrum_twin.fill_between(bin_centers, 0, aggregated_activations, 
+                                    alpha=0.2, color='r', label='Model Attention')
+        ax_spectrum_twin.plot(bin_centers, aggregated_activations, 'r-', alpha=0.5)
+        ax_spectrum_twin.set_ylabel('Normalized Activation', color='r')
+        ax_spectrum_twin.tick_params(axis='y', labelcolor='r')
+        
+        # Add legends
+        ax_spectrum.legend(loc='upper left')
+        ax_spectrum_twin.legend(loc='upper right')
         
         plt.tight_layout()
         
