@@ -2,7 +2,7 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 from pathlib import Path
 import numpy as np
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Tuple, Optional, Union
 from spectral_analysis import SpectralData
 from spectral.transforms import GlobalWindowResampler, Normalizer
 
@@ -43,11 +43,18 @@ class IRSpectraDataset(Dataset):
             'NP': 2
         }
         
-        self.concentration_to_float = {
-            '1-2': 0.5,
-            '1-8': 0.125,
-            '1-100': 0.01,
-            None: 0.0  # For control samples
+        self.concentration_to_idx = {
+            '1-2': 0,
+            '1-8': 1,
+            '1-100': 2,
+            None: 0  # For control samples - map to lowest concentration
+        }
+        
+        # Add a readable format mapping for display purposes
+        self.idx_to_concentration = {
+            0: '1/2',
+            1: '1/8',
+            2: '1/100'
         }
         
     def _load_all_spectra(self) -> List[Dict]:
@@ -89,9 +96,9 @@ class IRSpectraDataset(Dataset):
         treatment_idx = self.treatment_to_idx[item['treatment']]
         treatment_target = torch.LongTensor([treatment_idx])
         
-        # Prepare regression target (ensure it's a single float)
-        concentration = self.concentration_to_float[item['concentration']]
-        concentration_target = torch.FloatTensor([concentration])
+        # Changed: Prepare concentration target as class index
+        concentration_idx = self.concentration_to_idx[item['concentration']]
+        concentration_target = torch.LongTensor([concentration_idx])
         
         return spectrum, treatment_target, concentration_target
 

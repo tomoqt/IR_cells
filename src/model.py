@@ -5,6 +5,7 @@ from spectral.convnext1d import ConvNeXt1D
 class IRSpectraModel(nn.Module):
     def __init__(self, 
                  num_treatments: int = 3,
+                 num_concentrations: int = 3,
                  pretrained: bool = False):
         super().__init__()
         
@@ -24,13 +25,12 @@ class IRSpectraModel(nn.Module):
             nn.Linear(256, num_treatments)
         )
         
-        # Regression head for concentration
-        self.concentration_regressor = nn.Sequential(
+        # Changed: Classification head for concentration instead of regression
+        self.concentration_classifier = nn.Sequential(
             nn.Linear(512, 256),
             nn.ReLU(),
             nn.Dropout(0.2),
-            nn.Linear(256, 1),
-            nn.Sigmoid()  # Ensure output is between 0 and 1
+            nn.Linear(256, num_concentrations)
         )
         
     def forward(self, x):
@@ -39,6 +39,6 @@ class IRSpectraModel(nn.Module):
         
         # Get predictions
         treatment_logits = self.treatment_classifier(features)
-        concentration = self.concentration_regressor(features)
+        concentration_logits = self.concentration_classifier(features)
         
-        return treatment_logits, concentration 
+        return treatment_logits, concentration_logits 

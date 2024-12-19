@@ -8,6 +8,9 @@ from torch.utils.data import DataLoader
 from model import IRSpectraModel
 from data_module import get_dataloaders
 import wandb
+import matplotlib.pyplot as plt
+from datetime import datetime
+import shutil
 
 class IRSpectraTrainer:
     def __init__(self,
@@ -16,7 +19,8 @@ class IRSpectraTrainer:
                  val_loader: DataLoader,
                  learning_rate: float = 1e-4,
                  device: str = 'cuda' if torch.cuda.is_available() else 'cpu',
-                 wandb_config: dict = None):
+                 wandb_config: dict = None,
+                 debug_plots: bool = False):
         
         self.model = model.to(device)
         self.train_loader = train_loader
@@ -42,7 +46,7 @@ class IRSpectraTrainer:
         
         # Loss functions
         self.treatment_criterion = nn.CrossEntropyLoss()
-        self.concentration_criterion = nn.MSELoss()
+        self.concentration_criterion = nn.CrossEntropyLoss()
         
         # Optimizer
         self.optimizer = optim.AdamW(model.parameters(), lr=learning_rate)
@@ -52,11 +56,63 @@ class IRSpectraTrainer:
             self.optimizer, mode='min', factor=0.5, patience=5, verbose=True
         )
         
+        # Disable debug plots
+        self.debug_plots = False
+        
+    def plot_batch_spectra(self, spectra, treatment_targets, concentration_targets, phase='train'):
+        """Plot a batch of spectra with their labels in a style matching spectral_analysis.py"""
+        if self.debug_plot_count >= self.max_debug_plots:
+            return
+
+        fig, ax = plt.subplots(figsize=(12, 6))
+        
+        # Plot up to 5 spectra from the batch with their std deviation
+        num_spectra = min(5, len(spectra))
+        treatment_names = ['Control', 'AMT', 'NP']
+        
+        # Generate x-axis values (wavenumbers) - assuming 800-4000 range with 1000 points
+        wavenumbers = np.linspace(800, 4000, spectra.size(-1))
+        
+        for i in range(num_spectra):
+            # Squeeze out extra dimensions and convert to numpy array
+            spectrum = spectra[i].squeeze().cpu().numpy()
+            treatment = treatment_names[treatment_targets[i].item()]
+            concentration = concentration_targets[i].item()
+            
+            # Plot the spectrum
+            ax.plot(wavenumbers, spectrum, 
+                   label=f'{treatment} (conc: {concentration:.2f})')
+            
+            # Add shaded area for uncertainty (if you have multiple measurements)
+            std_dev = np.abs(spectrum) * 0.1  # 10% of absolute value as example
+            ax.fill_between(wavenumbers, 
+                          spectrum - std_dev,
+                          spectrum + std_dev,
+                          alpha=0.2)
+        
+        # Set proper axes labels and title
+        ax.set_xlabel('Wavenumber (cm⁻¹)')
+        ax.set_ylabel('Absorbance')
+        ax.set_title(f'Sample Spectra from {phase.capitalize()} Batch')
+        ax.legend()
+        ax.grid(True, alpha=0.3)
+        
+        # Set proper x-axis limits
+        ax.set_xlim(800, 4000)
+        
+        # Save the plot with tight layout
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        plt.savefig(self.debug_dir / f'spectra_batch_{phase}_{timestamp}.png', 
+                   dpi=300, bbox_inches='tight')
+        plt.close()
+        
+        self.debug_plot_count += 1
+
     def train_epoch(self):
         self.model.train()
         total_loss = 0
         treatment_correct = 0
-        concentration_mse = 0
+        concentration_correct = 0
         num_samples = 0
         
         for batch_idx, batch in enumerate(tqdm(self.train_loader, desc='Training')):
@@ -66,20 +122,16 @@ class IRSpectraTrainer:
             
             # Ensure proper dimensions
             batch_size = spectra.size(0)
-            spectra = spectra.squeeze(1)  # Remove extra channel dim if present
-            treatment_targets = treatment_targets.view(-1)  # Flatten to 1D
-            concentration_targets = concentration_targets.view(-1)  # Flatten to 1D
+            spectra = spectra.squeeze(1)
+            treatment_targets = treatment_targets.view(-1)
+            concentration_targets = concentration_targets.view(-1)
             
             # Forward pass
-            treatment_logits, concentration_preds = self.model(spectra)
+            treatment_logits, concentration_logits = self.model(spectra)
             
             # Calculate losses
-            treatment_loss = self.treatment_criterion(
-                treatment_logits, treatment_targets
-            )
-            concentration_loss = self.concentration_criterion(
-                concentration_preds.squeeze(), concentration_targets
-            )
+            treatment_loss = self.treatment_criterion(treatment_logits, treatment_targets)
+            concentration_loss = self.concentration_criterion(concentration_logits, concentration_targets)
             
             # Combined loss
             loss = treatment_loss + concentration_loss
@@ -92,23 +144,26 @@ class IRSpectraTrainer:
             # Calculate metrics
             total_loss += loss.item() * batch_size
             treatment_pred = treatment_logits.argmax(dim=1)
+            concentration_pred = concentration_logits.argmax(dim=1)
+            
             treatment_correct += (treatment_pred == treatment_targets).sum().item()
-            concentration_mse += concentration_loss.item() * batch_size
+            concentration_correct += (concentration_pred == concentration_targets).sum().item()
             num_samples += batch_size
             
-            # Log batch metrics to wandb
+            # Log batch metrics
             if self.use_wandb and batch_idx % 10 == 0:
                 wandb.log({
                     'batch/loss': loss.item(),
                     'batch/treatment_loss': treatment_loss.item(),
                     'batch/concentration_loss': concentration_loss.item(),
                     'batch/treatment_accuracy': (treatment_pred == treatment_targets).float().mean().item(),
+                    'batch/concentration_accuracy': (concentration_pred == concentration_targets).float().mean().item(),
                 })
         
         metrics = {
             'loss': total_loss / num_samples,
             'treatment_acc': treatment_correct / num_samples,
-            'concentration_mse': concentration_mse / num_samples
+            'concentration_acc': concentration_correct / num_samples
         }
         
         if self.use_wandb:
@@ -121,7 +176,7 @@ class IRSpectraTrainer:
         self.model.eval()
         total_loss = 0
         treatment_correct = 0
-        concentration_mse = 0
+        concentration_correct = 0
         num_samples = 0
         
         all_treatment_preds = []
@@ -129,10 +184,15 @@ class IRSpectraTrainer:
         all_concentration_preds = []
         all_concentration_targets = []
         
-        for batch in tqdm(self.val_loader, desc='Validation'):
+        for batch_idx, batch in enumerate(tqdm(self.val_loader, desc='Validation')):
             spectra, treatment_targets, concentration_targets = [
                 x.to(self.device) for x in batch
             ]
+            
+            # Add debug plotting for first validation batch
+            if self.debug_plots and batch_idx == 0:
+                self.plot_batch_spectra(spectra, treatment_targets, 
+                                      concentration_targets, phase='val')
             
             # Ensure proper dimensions
             batch_size = spectra.size(0)
@@ -141,48 +201,52 @@ class IRSpectraTrainer:
             concentration_targets = concentration_targets.view(-1)  # Flatten to 1D
             
             # Forward pass
-            treatment_logits, concentration_preds = self.model(spectra)
+            treatment_logits, concentration_logits = self.model(spectra)
             
             # Calculate losses
-            treatment_loss = self.treatment_criterion(
-                treatment_logits, treatment_targets
-            )
-            concentration_loss = self.concentration_criterion(
-                concentration_preds.squeeze(), concentration_targets
-            )
+            treatment_loss = self.treatment_criterion(treatment_logits, treatment_targets)
+            concentration_loss = self.concentration_criterion(concentration_logits, concentration_targets)
             
             loss = treatment_loss + concentration_loss
             
             # Calculate metrics
             total_loss += loss.item() * batch_size
             treatment_pred = treatment_logits.argmax(dim=1)
+            concentration_pred = concentration_logits.argmax(dim=1)
+            
             treatment_correct += (treatment_pred == treatment_targets).sum().item()
-            concentration_mse += concentration_loss.item() * batch_size
+            concentration_correct += (concentration_pred == concentration_targets).sum().item()
             num_samples += batch_size
             
             # Collect predictions for confusion matrix
             all_treatment_preds.extend(treatment_pred.cpu().numpy())
             all_treatment_targets.extend(treatment_targets.cpu().numpy())
-            all_concentration_preds.extend(concentration_preds.squeeze().cpu().numpy())
+            all_concentration_preds.extend(concentration_pred.cpu().numpy())
             all_concentration_targets.extend(concentration_targets.cpu().numpy())
         
         metrics = {
             'loss': total_loss / num_samples,
             'treatment_acc': treatment_correct / num_samples,
-            'concentration_mse': concentration_mse / num_samples
+            'concentration_acc': concentration_correct / num_samples
         }
         
         if self.use_wandb:
             # Log validation metrics
             wandb.log({f'val/{k}': v for k, v in metrics.items()})
             
-            # Log confusion matrix
+            # Log confusion matrices for both treatment and concentration
             wandb.log({
-                'val/confusion_matrix': wandb.plot.confusion_matrix(
+                'val/treatment_confusion_matrix': wandb.plot.confusion_matrix(
                     probs=None,
                     y_true=all_treatment_targets,
                     preds=all_treatment_preds,
                     class_names=['Control', 'AMT', 'NP']
+                ),
+                'val/concentration_confusion_matrix': wandb.plot.confusion_matrix(
+                    probs=None,
+                    y_true=all_concentration_targets,
+                    preds=all_concentration_preds,
+                    class_names=['1/2', '1/8', '1/100']
                 )
             })
             
@@ -231,20 +295,7 @@ class IRSpectraTrainer:
                 if self.use_wandb:
                     wandb.run.summary['best_val_loss'] = best_val_loss
             
-            # Regular checkpoints
-            if (epoch + 1) % save_freq == 0:
-                checkpoint_path = save_dir / f'checkpoint_epoch_{epoch+1}.pth'
-                torch.save({
-                    'epoch': epoch,
-                    'model_state_dict': self.model.state_dict(),
-                    'optimizer_state_dict': self.optimizer.state_dict(),
-                    'scheduler_state_dict': self.scheduler.state_dict(),
-                    'train_metrics': train_metrics,
-                    'val_metrics': val_metrics
-                }, checkpoint_path)
-                
-                if self.use_wandb:
-                    wandb.save(str(checkpoint_path))
+
         
         if self.use_wandb:
             wandb.finish()
@@ -252,9 +303,9 @@ class IRSpectraTrainer:
 def main():
     # Configuration
     DATA_DIR = r'data/SRmicroFTIR_cellule'
-    BATCH_SIZE = 4
-    NUM_EPOCHS = 100
-    LEARNING_RATE = 1e-3
+    BATCH_SIZE = 16
+    NUM_EPOCHS = 200
+    LEARNING_RATE = 1e-4
     
     # WandB configuration
     wandb_config = {
@@ -279,8 +330,8 @@ def main():
         }
     )
     
-    # Initialize model
-    model = IRSpectraModel(num_treatments=3)
+    # Initialize model with number of concentration classes
+    model = IRSpectraModel(num_treatments=3, num_concentrations=3)
     
     # Initialize trainer
     trainer = IRSpectraTrainer(
@@ -288,7 +339,8 @@ def main():
         train_loader=train_loader,
         val_loader=val_loader,
         learning_rate=LEARNING_RATE,
-        wandb_config=wandb_config
+        wandb_config=wandb_config,
+        debug_plots=False  # Set to False
     )
     
     # Train model
