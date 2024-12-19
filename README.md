@@ -161,12 +161,17 @@ Training metrics showing the model's learning progression over time.
 ![Treatment Classification Results](figures/training/confusion_matrix_treatment.png)
 Confusion matrix showing the model's performance in classifying different treatments (Control/AMT/NP).
 
+![Treatment Accuracy](figures/training/treatment_acc.png)
 
+Training and validation accuracy for treatment classification over training epochs.
 
 ![Concentration Classification Results](figures/training/confusion_matrix_concentration.png)
 
 Confusion matrix displaying the model's accuracy in classifying different concentrations (1/2, 1/8, 1/100).
 
+![Concentration Accuracy](figures/training/concentration_acc.png)
+
+Training and validation accuracy for concentration classification over training epochs.
 
 #### Model Analysis
 The model demonstrates ability to identify spectral patterns associated with different treatments and concentrations. Example analysis from figures/model_analysis shows the model's attention patterns across the spectral range, highlighting regions of interest for classification decisions.
