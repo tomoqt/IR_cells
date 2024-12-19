@@ -152,7 +152,16 @@ The project utilizes the ConvNeXt1D architecture for spectral analysis with the 
 - Integrated preprocessing pipeline
 
 #### Training Results
-[Training metrics and visualizations available in figures/training/]
+The model's training performance is demonstrated through the following visualizations:
+
+![Overall Training Progress](figures/training/convnext_train_overall.png)
+Training metrics showing the model's learning progression over time.
+
+![Treatment Classification Results](figures/training/confusion_matrix_treatment.png)
+Confusion matrix showing the model's performance in classifying different treatments (Control/AMT/NP).
+
+![Concentration Classification Results](figures/training/confusion_matrix_concentration.png)
+Confusion matrix displaying the model's accuracy in classifying different concentrations (1/2, 1/8, 1/100).
 
 #### Model Analysis
 The model demonstrates ability to identify spectral patterns associated with different treatments and concentrations. Example analysis from figures/model_analysis shows the model's attention patterns across the spectral range, highlighting regions of interest for classification decisions.
